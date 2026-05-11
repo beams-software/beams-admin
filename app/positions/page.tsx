@@ -13,11 +13,11 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { getNavBar, NavBarItemType,  } from "../constants"
+import { getNavBar, NavBarItemType } from "../constants"
+import { DataTable } from "@/app/positions/date-table"
+import data from "./data.json"
 
-
-const navBar = getNavBar(NavBarItemType.Dashboard);
-
+const navBar = getNavBar(NavBarItemType.ViewPositions)
 
 export default function Page() {
   return (
@@ -46,13 +46,8 @@ export default function Page() {
             </Breadcrumb>
           </div>
         </header>
-        <div className="flex flex-1 flex-col gap-4 p-4">
-          <div className="grid auto-rows-min gap-4 md:grid-cols-3">
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-            <div className="aspect-video rounded-xl bg-muted/50" />
-          </div>
-          <div className="min-h-screen flex-1 rounded-xl bg-muted/50 md:min-h-min" />
+        <div className="">
+            <DataTable data={data} />
         </div>
       </SidebarInset>
     </SidebarProvider>

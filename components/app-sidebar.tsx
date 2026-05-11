@@ -16,11 +16,13 @@ import {
   SidebarRail,
 } from "@/components/ui/sidebar"
 import { GalleryVerticalEndIcon } from "lucide-react"
+import { useTransitionRouter } from "next-view-transitions"
 
 interface sidebarItems {
   navMain: {
     title: string,
-    url: string,
+    url?: string,
+    isActive?: boolean,
     items?: {
       title: string,
       url: string,
@@ -171,6 +173,7 @@ const data_d: sidebarItems = {
 }
 
 export function AppSidebar({data ,...props }: { data: sidebarItems, props?:React.ComponentProps<typeof Sidebar>}) {
+  const router = useTransitionRouter();
   return (
     <Sidebar {...props}>
       <SidebarHeader>
@@ -195,8 +198,8 @@ export function AppSidebar({data ,...props }: { data: sidebarItems, props?:React
           <SidebarMenu>
             {data.navMain.map((item) => (
               <SidebarMenuItem key={item.title}>
-                <SidebarMenuButton asChild>
-                  <a href={item.url} className="font-medium">
+                <SidebarMenuButton asChild isActive={item.isActive} className="cursor-pointer">
+                  <a onClick={(e) => {e.preventDefault(); item.url && router.push(item.url); }} className="font-medium">
                     {item.title}
                   </a>
                 </SidebarMenuButton>
@@ -204,8 +207,10 @@ export function AppSidebar({data ,...props }: { data: sidebarItems, props?:React
                   <SidebarMenuSub>
                     {item.items.map((item) => (
                       <SidebarMenuSubItem key={item.title}>
-                        <SidebarMenuSubButton asChild isActive={item.isActive}>
-                          <a href={item.url}>{item.title}</a>
+                        <SidebarMenuSubButton asChild isActive={item.isActive} className="cursor-pointer">
+                          <a onClick={(e) => {e.preventDefault(); item.url && router.push(item.url); }}>
+                            {item.title}
+                          </a>
                         </SidebarMenuSubButton>
                       </SidebarMenuSubItem>
                     ))}
