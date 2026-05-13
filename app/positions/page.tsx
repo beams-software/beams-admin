@@ -46,7 +46,7 @@ export default function Page() {
             </Breadcrumb>
           </div>
         </header>
-        <div className="">
+        <div className="mt-5">
             <DataTable data={data} />
         </div>
       </SidebarInset>
