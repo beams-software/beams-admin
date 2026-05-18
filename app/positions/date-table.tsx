@@ -21,18 +21,12 @@ import {
 } from "@dnd-kit/sortable"
 import { CSS } from "@dnd-kit/utilities"
 import {
-  IconChevronDown,
   IconChevronLeft,
   IconChevronRight,
   IconChevronsLeft,
   IconChevronsRight,
-  IconCircleCheckFilled,
   IconDotsVertical,
   IconGripVertical,
-  IconLayoutColumns,
-  IconLoader,
-  IconPlus,
-  IconTrendingUp,
 } from "@tabler/icons-react"
 import {
   flexRender,
@@ -49,20 +43,11 @@ import {
   type SortingState,
   type VisibilityState,
 } from "@tanstack/react-table"
-import { Area, AreaChart, CartesianGrid, XAxis } from "recharts"
-import { toast } from "sonner"
 import { z } from "zod"
 
 import { useIsMobile } from "@/hooks/use-mobile"
-import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import {
-  ChartContainer,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart"
-import { Checkbox } from "@/components/ui/checkbox"
+
 import {
   Drawer,
   DrawerClose,
@@ -75,7 +60,6 @@ import {
 } from "@/components/ui/drawer"
 import {
   DropdownMenu,
-  DropdownMenuCheckboxItem,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
@@ -99,10 +83,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { useEffect } from "react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useDidUpdateEffect } from "@/hooks/use-didUpdateEffect"
 import wcsData from "../wcs.json"
+import { useEffect } from "react"
 
 export const schema = z.object({
   id: z.number(),
@@ -142,20 +126,22 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
     accessorKey: "positionName",
     header: "Position Name",
     cell: ({ row }) => {
-      return <>
-      <Label
-          htmlFor={`${row.original.id}-positionName`}
-          className="sr-only"
-        >
-          Position Name
-        </Label>
-        <Input
-          className="h-8 border-transparent bg-transparent text-left shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
-          defaultValue={row.original.positionName}
-          disabled
-          id={`${row.original.id}-positionName`}
-        />
-      </>
+      return (
+        <>
+          <Label
+            htmlFor={`${row.original.id}-positionName`}
+            className="sr-only"
+          >
+            Position Name
+          </Label>
+          <Input
+            className="h-8 border-transparent bg-transparent text-left shadow-none hover:bg-input/30 focus-visible:border focus-visible:bg-background dark:bg-transparent dark:hover:bg-input/30 dark:focus-visible:bg-input/30"
+            defaultValue={row.original.positionName}
+            disabled
+            id={`${row.original.id}-positionName`}
+          />
+        </>
+      )
     },
     enableHiding: false,
   },
@@ -176,15 +162,11 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
           defaultValue={row.original.wcs.join("\n")}
         >  
         </textarea> */}
-        {row.original.wcs.map((wc) => {
-          return (
-            <>
-              <p key={wc} className="p-1 text-sm">
-                {wc}
-              </p>
-            </>
-          )
-        })}
+        {row.original.wcs.map((wc) => (
+          <p key={wc} className="p-1 text-sm">
+            {wc}
+          </p>
+        ))}
       </>
     ),
   },
@@ -210,26 +192,34 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
   },
   {
     id: "actions",
-    cell: ({row}) => {
-      return <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
-            size="icon"
-          >
-            <IconDotsVertical />
-            <span className="sr-only">Open menu</span>
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-32" onFocusOutside={(e) => {e.preventDefault()}}>
-          <TableCellViewer item={row.original}/>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      </>
+    cell: ({ row }) => {
+      return (
+        <>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                className="flex size-8 text-muted-foreground data-[state=open]:bg-muted"
+                size="icon"
+              >
+                <IconDotsVertical />
+                <span className="sr-only">Open menu</span>
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              align="end"
+              className="w-32"
+              onFocusOutside={(e) => {
+                e.preventDefault()
+              }}
+            >
+              <TableCellViewer item={row.original} />
+              <DropdownMenuSeparator />
+              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </>
+      )
     },
   },
 ]
@@ -264,7 +254,12 @@ export function DataTable({
 }: {
   data: z.infer<typeof schema>[]
 }) {
-  const [data, setData] = React.useState(() => initialData)
+  const [data, setData] = React.useState(initialData);
+  const [initialized, setInitialized] = React.useState(false);
+  useEffect(() => {
+    setData(initialData);
+    setInitialized(true);
+  }, [initialData])
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
@@ -314,7 +309,14 @@ export function DataTable({
   })
 
   useDidUpdateEffect(() => {
-    console.log(data)
+    if (initialized) {
+      setInitialized(false);
+    } else {
+      if (data.length > 0) {
+        // TODO: Send updated priority to backend
+        console.log("Priority updated:", data);
+      }
+    }
   }, [data])
 
   function handleDragEnd(event: DragEndEvent) {
@@ -486,18 +488,26 @@ export function DataTable({
   )
 }
 
-function TableCellViewer({ item, onOpen }: { item: z.infer<typeof schema>, onOpen?: () => void }) {
+function TableCellViewer({
+  item,
+  onOpen,
+}: {
+  item: z.infer<typeof schema>
+  onOpen?: () => void
+}) {
   const isMobile = useIsMobile()
 
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"} >
+    <Drawer direction={isMobile ? "bottom" : "right"}>
       <DrawerTrigger asChild>
-        <button 
-        onClick={()=> {
-          
-          onOpen?.();
-        }}
-        className="cursor-pointer group/dropdown-menu-item w-full relative flex cursor-default items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent hover:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive">Edit</button>
+        <button
+          onClick={() => {
+            onOpen?.()
+          }}
+          className="group/dropdown-menu-item relative flex w-full cursor-default cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive"
+        >
+          Edit
+        </button>
       </DrawerTrigger>
       <DrawerContent>
         <DrawerHeader className="gap-1">
@@ -515,7 +525,11 @@ function TableCellViewer({ item, onOpen }: { item: z.infer<typeof schema>, onOpe
           <form className="flex flex-col gap-4">
             <div className="flex flex-col gap-3">
               <Label htmlFor="positionName">Position Name</Label>
-              <Input id="positionName" defaultValue={item.positionName} required />
+              <Input
+                id="positionName"
+                defaultValue={item.positionName}
+                required
+              />
             </div>
             <div className="grid grid-cols-[1fr_35px_1fr]">
               <div className="flex flex-col gap-3">
@@ -540,24 +554,21 @@ function TableCellViewer({ item, onOpen }: { item: z.infer<typeof schema>, onOpe
                 {"->"}
               </Button>
               <div className="flex flex-col gap-3">
-                
-                  <Label htmlFor="status">Selected Groups</Label>
-                  
+                <Label htmlFor="status">Selected Groups</Label>
 
                 <textarea
                   id="status"
-                  className="flex min-h-[60px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-[150px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled
                   defaultValue={item.wcs.join(", ")}
                 />
               </div>
             </div>
-            <div className="justify-end flex">
+            <div className="flex justify-end">
               <Button className="h-5" onClick={(e) => e.preventDefault()}>
                 Clear
               </Button>
             </div>
-            
           </form>
         </div>
         <DrawerFooter>
