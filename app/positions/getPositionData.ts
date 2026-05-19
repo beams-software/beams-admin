@@ -24,7 +24,7 @@ export function usePositionData(API_URL: string, token: string) {
     const [error, setError] = useState<string | null>(null);
     const [data, setData] = useState<z.infer<typeof positionDataSchema> | null>(null);
     const router = useTransitionRouter();
-
+    const [update, setUpdate] = useState(false);
 
     useEffect(() => {
         if (!API_URL || !token) return;
@@ -50,7 +50,7 @@ export function usePositionData(API_URL: string, token: string) {
             console.error(err);
         });
 
-    }, [API_URL, token, router]);
+    }, [API_URL, token, router, update]);
 
-    return [data, loading, error] as const;
+    return [data, loading, error, setUpdate] as const;
 }

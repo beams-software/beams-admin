@@ -87,6 +87,7 @@ import { Tabs, TabsContent } from "@/components/ui/tabs"
 import { useDidUpdateEffect } from "@/hooks/use-didUpdateEffect"
 import wcsData from "../wcs.json"
 import { useEffect } from "react"
+import axios from "axios"
 
 export const schema = z.object({
   id: z.number(),
@@ -251,11 +252,19 @@ function DraggableRow({ row }: { row: Row<z.infer<typeof schema>> }) {
 
 export function DataTable({
   data: initialData,
+  onPriorityChange,
+  apiURL,
+  token
 }: {
-  data: z.infer<typeof schema>[]
+  data: z.infer<typeof schema>[],
+  onPriorityChange?: () => void,
+  apiURL: string,
+  token: string
 }) {
   const [data, setData] = React.useState(initialData);
+  const [prevData, setPrevData] = React.useState(initialData);
   const [initialized, setInitialized] = React.useState(false);
+  const [priorityChanged, setPriorityChanged] = React.useState(false);
   useEffect(() => {
     setData(initialData);
     setInitialized(true);
@@ -308,13 +317,26 @@ export function DataTable({
     getFacetedUniqueValues: getFacetedUniqueValues(),
   })
 
-  useDidUpdateEffect(() => {
+  useDidUpdateEffect(async () => {
     if (initialized) {
       setInitialized(false);
     } else {
       if (data.length > 0) {
+        console.log(token)
         // TODO: Send updated priority to backend
         console.log("Priority updated:", data);
+        console.log("Previous data:", prevData);
+        await axios.post(`${apiURL}/admin/position/reorderPositions`, {
+          positions: data.map((item) => { return {
+            id: item.id,
+            priorityNumber: item.priorityNumber
+          }}),
+        }, {
+          headers: {
+            "x-token": token
+          }
+        });
+        onPriorityChange?.();
       }
     }
   }, [data])
@@ -325,8 +347,11 @@ export function DataTable({
       setData((data) => {
         const oldIndex = dataIds.indexOf(active.id)
         const newIndex = dataIds.indexOf(over.id)
-
-        return arrayMove(data, oldIndex, newIndex)
+        setPrevData(data);
+        return arrayMove(data, oldIndex, newIndex).toReversed().map((item, index) => ({
+          ...item,
+          priorityNumber: index, // Update priority based on new position
+        })).toReversed();
       })
     }
   }
@@ -496,15 +521,30 @@ function TableCellViewer({
   onOpen?: () => void
 }) {
   const isMobile = useIsMobile()
-
+  const [wcs, setWcs] = React.useState<string[]>(item.wcs);
+  const wcsRef = React.useRef<HTMLTextAreaElement>(null);
+  const wcsError = React.useRef<HTMLParagraphElement>(null);
+  const [selectedWc, setSelectedWc] = React.useState<string | null>(null);
+  const [submitted, setSubmitted] = React.useState(false);
+  const updateFormRef = React.useRef<HTMLFormElement>(null);
+  useDidUpdateEffect(() => {
+    console.log("WCS updated:", wcs);
+    if (wcsRef.current) {
+      wcsRef.current.value = wcs.join("\n");
+    }
+  }, [wcs])
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"}>
+    <Drawer direction={isMobile ? "bottom" : "right"} onClose={() => {
+      if (!submitted){
+        setWcs(item.wcs); 
+      }
+    }}>
       <DrawerTrigger asChild>
         <button
           onClick={() => {
             onOpen?.()
           }}
-          className="group/dropdown-menu-item relative flex w-full cursor-default cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive"
+          className="group/dropdown-menu-item relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive"
         >
           Edit
         </button>
@@ -522,25 +562,28 @@ function TableCellViewer({
               <Separator />
             </>
           )}
-          <form className="flex flex-col gap-4">
+          <form className="flex flex-col gap-4" ref={updateFormRef}>
             <div className="flex flex-col gap-3">
               <Label htmlFor="positionName">Position Name</Label>
               <Input
                 id="positionName"
+                name="positionName"
                 defaultValue={item.positionName}
                 required
               />
             </div>
+            <hr />
+            <p className="text-red-600" ref={wcsError}></p>
             <div className="grid grid-cols-[1fr_35px_1fr]">
               <div className="flex flex-col gap-3">
                 <Label htmlFor="type">Which groups can see?</Label>
-                <Select>
-                  <SelectTrigger id="type" className="w-full">
+                <Select onValueChange={setSelectedWc} required={false}>
+                  <SelectTrigger id="type" className="w-full" >
                     <SelectValue placeholder="Select a group" />
                   </SelectTrigger>
                   <SelectContent>
                     {Object.entries(wcsData).map(([wc, value]) => (
-                      <SelectItem key={value} value={String(value)}>
+                      <SelectItem key={value} value={wc}>
                         {wc}
                       </SelectItem>
                     ))}
@@ -549,32 +592,60 @@ function TableCellViewer({
               </div>
               <Button
                 className="mx-1 mt-6 w-7 text-center"
-                onClick={(e) => e.preventDefault()}
+                onClick={(e) => {
+                  e.preventDefault();
+                  if (selectedWc) {
+                    if (!wcs.includes(selectedWc)) {
+                      setWcs((prev) => [...prev, selectedWc!]);
+                      setSelectedWc(null);
+                      if (wcsError.current) {
+                        wcsError.current.textContent = "";
+                      }
+                    } else {
+                      if (wcsError.current) {
+                        wcsError.current.textContent = "Group already added";
+                      }
+                    }
+                  }
+                }}
               >
                 {"->"}
               </Button>
               <div className="flex flex-col gap-3">
                 <Label htmlFor="status">Selected Groups</Label>
-
                 <textarea
                   id="status"
-                  className="flex min-h-[150px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                  className="flex min-h-37.5 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   disabled
-                  defaultValue={item.wcs.join(", ")}
+                  defaultValue={wcs.join("\n")}
+                  ref={wcsRef}
                 />
               </div>
             </div>
             <div className="flex justify-end">
-              <Button className="h-5" onClick={(e) => e.preventDefault()}>
+              <Button className="h-5" onClick={(e) => {e.preventDefault(); setWcs([]);}}>
                 Clear
               </Button>
             </div>
           </form>
         </div>
         <DrawerFooter>
-          <Button>Submit</Button>
+          <Button onClick={() => {
+            if (updateFormRef.current){
+              if(updateFormRef.current.reportValidity()){
+                if (wcs.length != 0){
+                  console.log(new FormData(updateFormRef.current).get("positionName"), wcs, item.id, item.priorityNumber);
+                  // TODO: make wcs as string and send updated position to the backend
+                }else{
+                  if (wcsError.current) {
+                    wcsError.current.textContent = "At least one group must be selected";
+                  }
+                }
+              }
+            }
+          }}>Submit</Button>
           <DrawerClose asChild>
-            <Button variant="outline">Done</Button>
+            <Button variant="outline">Cancel</Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

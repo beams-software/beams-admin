@@ -62,7 +62,7 @@ export default function Page() {
     }
   }, [token, router])
 
-  const [data, loading, error] = usePositionData(
+  const [data, loading, error, setUpdate] = usePositionData(
     apiUrl || "",
     token || ""
   )
@@ -115,7 +115,7 @@ export default function Page() {
           {error && <p>{error}</p>}
 
           {!loading && !error && (
-            <DataTable data={dateTableData} />
+            <DataTable data={dateTableData} apiURL={apiUrl || ""} token={token || ""} />
           )}
         </div>
       </SidebarInset>
