@@ -14,7 +14,6 @@ interface sidebarItems {
 export enum NavBarItemType {
   Dashboard,
   ViewPositions,
-  CreatePosition,
 }
 
 export function getNavBar(activeItem: NavBarItemType) {
@@ -27,18 +26,8 @@ export function getNavBar(activeItem: NavBarItemType) {
       },
       {
         title: "Positions",
-        items: [
-          {
-            title: "View Positions",
-            url: "/positions",
-            isActive: false,
-          },
-          {
-            title: "Create Position",
-            url: "/positions/create",
-            isActive: false,
-          },
-        ],
+        url: "/positions",
+        isActive: false,
       },
     ],
   }
@@ -48,14 +37,7 @@ export function getNavBar(activeItem: NavBarItemType) {
       navBar.navMain[0].isActive = true
       break
     case NavBarItemType.ViewPositions:
-      if (navBar.navMain[1].items) {
-        navBar.navMain[1].items[0].isActive = true
-      }
-      break
-    case NavBarItemType.CreatePosition:
-      if (navBar.navMain[1].items) {
-        navBar.navMain[1].items[1].isActive = true
-      }
+      navBar.navMain[1].isActive = true
       break
   }
   return navBar

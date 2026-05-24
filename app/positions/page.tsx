@@ -22,39 +22,40 @@ import {
 import { getNavBar, NavBarItemType } from "../constants"
 import { DataTable, schema } from "@/app/positions/date-table"
 import { usePositionData } from "./getPositionData"
-import { number, z } from "zod"
-import  mockData  from "./data.json"
+import { z } from "zod"
 import wcsTemplate from "../wcs.json"
+import { CreatePositionDrawer } from "./create-position-drawer"
 
 const navBar = getNavBar(NavBarItemType.ViewPositions)
 
-export const dateTableSchema = z.array(schema);
+export const dataTableSchema = z.array(schema)
 export default function Page() {
-  
-  const [dateTableData, setDateTableData] = useState<z.infer<typeof dateTableSchema>>([]);
+  const [dateTableData, setDateTableData] = useState<
+    z.infer<typeof dataTableSchema>
+  >([])
+
+  const [copy, setCopy] = useState<z.infer<typeof dataTableSchema>>([])
 
   const router = useTransitionRouter()
   const wcsStringSchema = z.string().transform((str) => {
-    const numbers = str.split(";").map(num => parseInt(num.trim()));
-    var wcs : string[] = []
-    numbers.forEach(num => {
+    const numbers = str.split(";").map((num) => parseInt(num.trim()))
+    var wcs: string[] = []
+    numbers.forEach((num) => {
       Object.entries(wcsTemplate).forEach(([key, value]) => {
         if (value === num) {
           wcs.push(key)
         }
-      });
-    });
-    return wcs;
-  });
+      })
+    })
+    return wcs
+  })
   const apiUrl =
-    typeof window !== "undefined"
-      ? localStorage.getItem("API_URL")
-      : null
+    typeof window !== "undefined" ? localStorage.getItem("API_URL") : null
 
   const token =
-    typeof window !== "undefined"
-      ? sessionStorage.getItem("token")
-      : null
+    typeof window !== "undefined" ? sessionStorage.getItem("token") : null
+
+  var dataCopy: z.infer<typeof dataTableSchema> = []
 
   useEffect(() => {
     if (!token) {
@@ -69,20 +70,20 @@ export default function Page() {
 
   useEffect(() => {
     console.log("Data updated:", data)
-    if (data){
-      var _dateTableData: z.infer<typeof dateTableSchema> = []
-      data.result.forEach(position => {
-        const nw = wcsStringSchema.parse(position.wcs);
+    if (data) {
+      var _dateTableData: z.infer<typeof dataTableSchema> = []
+      data.result.forEach((position) => {
+        const nw = wcsStringSchema.parse(position.wcs)
         _dateTableData.push({
           id: position.id,
           positionName: position.name,
           priorityNumber: position.priorityNumber,
           wcs: nw,
-          numberOfCandidates: position._count.candidates  
+          numberOfCandidates: position._count.candidates,
         })
-      });
-      setDateTableData(_dateTableData);
-      
+      })
+      setDateTableData(_dateTableData)
+      setCopy(_dateTableData)
     }
   }, [data])
 
@@ -103,7 +104,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage>Positions</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
@@ -111,11 +112,18 @@ export default function Page() {
         </header>
 
         <div className="mt-5">
+          <CreatePositionDrawer data={copy} apiUrl={apiUrl || ""} token={token || ""} />
+          {/* <Separator className="mb-4" /> */}
           {loading && <p>Loading...</p>}
           {error && <p>{error}</p>}
 
           {!loading && !error && (
-            <DataTable data={dateTableData} apiURL={apiUrl || ""} token={token || ""} />
+            <DataTable
+              data={dateTableData}
+              apiURL={apiUrl || ""}
+              token={token || ""}
+              onPriorityChange={setCopy}
+            />
           )}
         </div>
       </SidebarInset>

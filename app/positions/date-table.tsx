@@ -88,6 +88,20 @@ import { useDidUpdateEffect } from "@/hooks/use-didUpdateEffect"
 import wcsData from "../wcs.json"
 import { useEffect } from "react"
 import axios from "axios"
+import { useTransitionRouter } from "next-view-transitions"
+import { Trash2Icon } from "lucide-react"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 
 export const schema = z.object({
   id: z.number(),
@@ -216,7 +230,65 @@ const columns: ColumnDef<z.infer<typeof schema>>[] = [
             >
               <TableCellViewer item={row.original} />
               <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Delete</DropdownMenuItem>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <button
+                    onClick={() => {}}
+                    role="menuitem"
+                    data-slot="dropdown-menu-item"
+                    data-variant="destructive"
+                    className="group/dropdown-menu-item relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:hover:bg-destructive/10 data-[variant=destructive]:hover:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:hover:bg-destructive/20 dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive"
+                  >
+                    <Trash2Icon className="mr-2 h-4 w-4" />
+                    Delete
+                  </button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+                      <Trash2Icon />
+                    </AlertDialogMedia>
+                    <AlertDialogTitle>Delete position?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this position.{" "}
+                      <span className="font-bold text-destructive">
+                        This will also delete all candidates under this position
+                        and cannot be undone.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel variant="outline">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={async () => {
+                        const apiUrl =
+                          typeof window !== "undefined"
+                            ? localStorage.getItem("API_URL")
+                            : null
+
+                        const token =
+                          typeof window !== "undefined"
+                            ? sessionStorage.getItem("token")
+                            : null
+                        await axios.delete(
+                          `${apiUrl}/admin/position/deletePosition/${row.original.id}`,
+                          {
+                            headers: {
+                              "X-Token": `${token}`,
+                            },
+                          }
+                        )
+                        window.location.reload();
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </DropdownMenuContent>
           </DropdownMenu>
         </>
@@ -254,20 +326,20 @@ export function DataTable({
   data: initialData,
   onPriorityChange,
   apiURL,
-  token
+  token,
 }: {
-  data: z.infer<typeof schema>[],
-  onPriorityChange?: () => void,
-  apiURL: string,
+  data: z.infer<typeof schema>[]
+  onPriorityChange?: (data: z.infer<typeof schema>[]) => void
+  apiURL: string
   token: string
 }) {
-  const [data, setData] = React.useState(initialData);
-  const [prevData, setPrevData] = React.useState(initialData);
-  const [initialized, setInitialized] = React.useState(false);
-  const [priorityChanged, setPriorityChanged] = React.useState(false);
+  const [data, setData] = React.useState(initialData)
+  const [prevData, setPrevData] = React.useState(initialData)
+  const [initialized, setInitialized] = React.useState(false)
+  const [priorityChanged, setPriorityChanged] = React.useState(false)
   useEffect(() => {
-    setData(initialData);
-    setInitialized(true);
+    setData(initialData)
+    setInitialized(true)
   }, [initialData])
   const [rowSelection, setRowSelection] = React.useState({})
   const [columnVisibility, setColumnVisibility] =
@@ -319,24 +391,30 @@ export function DataTable({
 
   useDidUpdateEffect(async () => {
     if (initialized) {
-      setInitialized(false);
+      setInitialized(false)
     } else {
       if (data.length > 0) {
         console.log(token)
         // TODO: Send updated priority to backend
-        console.log("Priority updated:", data);
-        console.log("Previous data:", prevData);
-        await axios.post(`${apiURL}/admin/position/reorderPositions`, {
-          positions: data.map((item) => { return {
-            id: item.id,
-            priorityNumber: item.priorityNumber
-          }}),
-        }, {
-          headers: {
-            "x-token": token
+        console.log("Priority updated:", data)
+        console.log("Previous data:", prevData)
+        await axios.post(
+          `${apiURL}/admin/position/reorderPositions`,
+          {
+            positions: data.map((item) => {
+              return {
+                id: item.id,
+                priorityNumber: item.priorityNumber,
+              }
+            }),
+          },
+          {
+            headers: {
+              "x-token": token,
+            },
           }
-        });
-        onPriorityChange?.();
+        )
+        onPriorityChange?.(data)
       }
     }
   }, [data])
@@ -347,11 +425,14 @@ export function DataTable({
       setData((data) => {
         const oldIndex = dataIds.indexOf(active.id)
         const newIndex = dataIds.indexOf(over.id)
-        setPrevData(data);
-        return arrayMove(data, oldIndex, newIndex).toReversed().map((item, index) => ({
-          ...item,
-          priorityNumber: index, // Update priority based on new position
-        })).toReversed();
+        setPrevData(data)
+        return arrayMove(data, oldIndex, newIndex)
+          .toReversed()
+          .map((item, index) => ({
+            ...item,
+            priorityNumber: index, // Update priority based on new position
+          }))
+          .toReversed()
       })
     }
   }
@@ -418,8 +499,6 @@ export function DataTable({
         </div>
         <div className="flex items-center justify-between px-4">
           <div className="hidden flex-1 text-sm text-muted-foreground lg:flex">
-            {table.getFilteredSelectedRowModel().rows.length} of{" "}
-            {table.getFilteredRowModel().rows.length} row(s) selected.
           </div>
           <div className="flex w-full items-center gap-8 lg:w-fit">
             <div className="hidden items-center gap-2 lg:flex">
@@ -521,24 +600,28 @@ function TableCellViewer({
   onOpen?: () => void
 }) {
   const isMobile = useIsMobile()
-  const [wcs, setWcs] = React.useState<string[]>(item.wcs);
-  const wcsRef = React.useRef<HTMLTextAreaElement>(null);
-  const wcsError = React.useRef<HTMLParagraphElement>(null);
-  const [selectedWc, setSelectedWc] = React.useState<string | null>(null);
-  const [submitted, setSubmitted] = React.useState(false);
-  const updateFormRef = React.useRef<HTMLFormElement>(null);
+  const [wcs, setWcs] = React.useState<string[]>(item.wcs)
+  const wcsRef = React.useRef<HTMLTextAreaElement>(null)
+  const wcsError = React.useRef<HTMLParagraphElement>(null)
+  const [selectedWc, setSelectedWc] = React.useState<string | null>(null)
+  const [submitted, setSubmitted] = React.useState(false)
+  const updateFormRef = React.useRef<HTMLFormElement>(null)
+  const router = useTransitionRouter()
   useDidUpdateEffect(() => {
-    console.log("WCS updated:", wcs);
+    console.log("WCS updated:", wcs)
     if (wcsRef.current) {
-      wcsRef.current.value = wcs.join("\n");
+      wcsRef.current.value = wcs.join("\n")
     }
   }, [wcs])
   return (
-    <Drawer direction={isMobile ? "bottom" : "right"} onClose={() => {
-      if (!submitted){
-        setWcs(item.wcs); 
-      }
-    }}>
+    <Drawer
+      direction={isMobile ? "bottom" : "right"}
+      onClose={() => {
+        if (!submitted) {
+          setWcs(item.wcs)
+        }
+      }}
+    >
       <DrawerTrigger asChild>
         <button
           onClick={() => {
@@ -578,7 +661,7 @@ function TableCellViewer({
               <div className="flex flex-col gap-3">
                 <Label htmlFor="type">Which groups can see?</Label>
                 <Select onValueChange={setSelectedWc} required={false}>
-                  <SelectTrigger id="type" className="w-full" >
+                  <SelectTrigger id="type" className="w-full">
                     <SelectValue placeholder="Select a group" />
                   </SelectTrigger>
                   <SelectContent>
@@ -593,17 +676,16 @@ function TableCellViewer({
               <Button
                 className="mx-1 mt-6 w-7 text-center"
                 onClick={(e) => {
-                  e.preventDefault();
+                  e.preventDefault()
                   if (selectedWc) {
                     if (!wcs.includes(selectedWc)) {
-                      setWcs((prev) => [...prev, selectedWc!]);
-                      setSelectedWc(null);
+                      setWcs((prev) => [...prev, selectedWc!])
                       if (wcsError.current) {
-                        wcsError.current.textContent = "";
+                        wcsError.current.textContent = ""
                       }
                     } else {
                       if (wcsError.current) {
-                        wcsError.current.textContent = "Group already added";
+                        wcsError.current.textContent = "Group already added"
                       }
                     }
                   }
@@ -623,27 +705,76 @@ function TableCellViewer({
               </div>
             </div>
             <div className="flex justify-end">
-              <Button className="h-5" onClick={(e) => {e.preventDefault(); setWcs([]);}}>
+              <Button
+                className="h-5"
+                onClick={(e) => {
+                  e.preventDefault()
+                  setWcs([])
+                }}
+              >
                 Clear
               </Button>
             </div>
           </form>
         </div>
         <DrawerFooter>
-          <Button onClick={() => {
-            if (updateFormRef.current){
-              if(updateFormRef.current.reportValidity()){
-                if (wcs.length != 0){
-                  console.log(new FormData(updateFormRef.current).get("positionName"), wcs, item.id, item.priorityNumber);
-                  // TODO: make wcs as string and send updated position to the backend
-                }else{
-                  if (wcsError.current) {
-                    wcsError.current.textContent = "At least one group must be selected";
+          <Button
+            onClick={async () => {
+              if (updateFormRef.current) {
+                if (updateFormRef.current.reportValidity()) {
+                  if (wcs.length != 0) {
+                    // console.log(new FormData(updateFormRef.current).get("positionName"), wcs, item.id, item.priorityNumber);
+                    // TODO: make wcs as string and send updated position to the backend
+                    const wcsString: string = wcs
+                      .map((wc) => wcsData[wc as keyof typeof wcsData])
+                      .join(";")
+                    const positionName = new FormData(updateFormRef.current)
+                      .get("positionName")
+                      ?.toString()
+                      .trim()
+                    console.log(
+                      positionName,
+                      wcsString,
+                      item.id,
+                      item.priorityNumber
+                    )
+                    const apiUrl =
+                      typeof window !== "undefined"
+                        ? localStorage.getItem("API_URL")
+                        : null
+
+                    const token =
+                      typeof window !== "undefined"
+                        ? sessionStorage.getItem("token")
+                        : null
+                    await axios.post(
+                      `${apiUrl}/admin/position/updatePosition`,
+                      {
+                        id: item.id,
+                        priority: item.priorityNumber,
+                        name: positionName,
+                        wcs: wcsString,
+                      },
+                      {
+                        headers: {
+                          "x-token": token || "",
+                        },
+                      }
+                    )
+
+                    window.location.reload()
+                  } else {
+                    if (wcsError.current) {
+                      wcsError.current.textContent =
+                        "At least one group must be selected"
+                    }
                   }
                 }
               }
-            }
-          }}>Submit</Button>
+            }}
+          >
+            Submit
+          </Button>
           <DrawerClose asChild>
             <Button variant="outline">Cancel</Button>
           </DrawerClose>
