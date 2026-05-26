@@ -60,7 +60,7 @@ function PositionTable({
             })}</TableCell>
             <TableCell>{position._count.candidates}</TableCell>
             <TableCell className="text-right"><Button onClick={() => router.push(`/candidates/${position.id}`)}>View Candidates</Button></TableCell>
-            //TODO: Check out react tanstack react query
+            {/* TODO: Check out react tanstack react query */}
           </TableRow>
         ))}
       </TableBody>
