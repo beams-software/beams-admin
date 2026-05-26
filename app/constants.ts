@@ -14,6 +14,7 @@ interface sidebarItems {
 export enum NavBarItemType {
   Dashboard,
   ViewPositions,
+  ViewCandidates
 }
 
 export function getNavBar(activeItem: NavBarItemType) {
@@ -29,6 +30,11 @@ export function getNavBar(activeItem: NavBarItemType) {
         url: "/positions",
         isActive: false,
       },
+      {
+        title: "Candidates",
+        url: "/candidates",
+        isActive: false,
+      }
     ],
   }
 
@@ -38,6 +44,9 @@ export function getNavBar(activeItem: NavBarItemType) {
       break
     case NavBarItemType.ViewPositions:
       navBar.navMain[1].isActive = true
+      break
+    case NavBarItemType.ViewCandidates:
+      navBar.navMain[2].isActive = true
       break
   }
   return navBar
