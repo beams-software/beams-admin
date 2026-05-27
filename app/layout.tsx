@@ -1,38 +1,57 @@
+"use client"
 import { Geist, Geist_Mono, Inter } from "next/font/google"
 
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
-import { ViewTransitions } from "next-view-transitions";
+import { ViewTransitions } from "next-view-transitions"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 
-const inter = Inter({subsets:['latin'],variable:'--font-sans'})
+const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 const fontMono = Geist_Mono({
   subsets: ["latin"],
   variable: "--font-mono",
 })
 
+const queryClient = new QueryClient()
+
+declare global {
+  interface Window {
+    __TANSTACK_QUERY_CLIENT__:
+      import('@tanstack/query-core').QueryClient
+  }
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode
 }>) {
+  if (typeof window !== "undefined") {
+  window.__TANSTACK_QUERY_CLIENT__ = queryClient
+  }
   return (
     <ViewTransitions>
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={cn("antialiased", fontMono.variable, "font-sans", inter.variable)}
-    >
-      <body>
-        <ThemeProvider>
-          <TooltipProvider>
-            {children}
-          </TooltipProvider>
-        </ThemeProvider>
-      </body>
-    </html>
+      <QueryClientProvider client={queryClient}>
+        <html
+          lang="en"
+          suppressHydrationWarning
+          className={cn(
+            "antialiased",
+            fontMono.variable,
+            "font-sans",
+            inter.variable
+          )}
+        >
+          <body>
+            <ThemeProvider>
+              <TooltipProvider>{children}</TooltipProvider>
+            </ThemeProvider>
+          </body>
+        </html>
+      </QueryClientProvider>
     </ViewTransitions>
   )
 }

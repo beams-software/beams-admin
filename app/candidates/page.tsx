@@ -14,14 +14,28 @@ import {
   BreadcrumbPage,
 } from "@/components/ui/breadcrumb"
 import { Separator } from "@/components/ui/separator"
-import { usePositionData } from "../positions/getPositionData"
 import { useEffect } from "react"
 import { useTransitionRouter } from "next-view-transitions"
 import { Table, TableBody, TableCaption, TableCell, TableFooter, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import wcsTemplate from "../wcs.json"
 import { Button } from "@/components/ui/button"
+import { useQuery } from "@tanstack/react-query"
+import { z } from "zod";
 
 const navBar = getNavBar(NavBarItemType.ViewCandidates)
+const positionDataSchema = z.object({
+    status: z.number(),
+    error: z.string().optional(),
+    result: z.array(z.object({
+        id: z.number(),
+        name: z.string(),
+        priorityNumber: z.number(),
+        wcs: z.string(),
+        _count: z.object({
+            candidates: z.number()
+        })
+    }))
+}); 
 
 function PositionTable({
   response,
@@ -81,10 +95,21 @@ export default function Page() {
     }
   }, [token, router])
 
-  const [data, loading, error, setUpdate] = usePositionData(
-    apiUrl || "",
-    token || ""
-  )
+  // const [data, loading, error, setUpdate] = usePositionData(
+  //   apiUrl || "",
+  //   token || ""
+  // )
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['getPositions'],
+    queryFn: () =>
+      fetch(`${apiUrl}/admin/position/getPositions`, {
+        headers: {
+          "X-Token": `${token}`,
+        },
+      }).then(async (res) =>
+        positionDataSchema.parse(await res.json()),
+      ),
+  })
   return (
     <SidebarProvider>
       <AppSidebar data={navBar} />
@@ -99,7 +124,7 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>Dashboard</BreadcrumbPage>
+                  <BreadcrumbPage>Candidates</BreadcrumbPage>
                 </BreadcrumbItem>
                 {/* <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
@@ -110,8 +135,8 @@ export default function Page() {
           </div>
         </header>
         <div className="mt-5">
-          {loading && <p>Loading...</p>}
-          {error && <p>Error: {error}</p>}
+          {isLoading && <p>Loading...</p>}
+          {error && <p>Error: {error.message}</p>}
           {data && <div className="mx-6 p-4 border-2 rounded-3xl"><PositionTable response={data} /></div>}
         </div>
       </SidebarInset>

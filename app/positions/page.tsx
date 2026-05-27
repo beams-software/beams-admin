@@ -21,12 +21,25 @@ import {
 
 import { getNavBar, NavBarItemType } from "../constants"
 import { DataTable, schema } from "@/app/positions/date-table"
-import { usePositionData } from "./getPositionData"
 import { z } from "zod"
 import wcsTemplate from "../wcs.json"
 import { CreatePositionDrawer } from "./create-position-drawer"
+import { useQuery } from "@tanstack/react-query"
 
 const navBar = getNavBar(NavBarItemType.ViewPositions)
+const positionDataSchema = z.object({
+    status: z.number(),
+    error: z.string().optional(),
+    result: z.array(z.object({
+        id: z.number(),
+        name: z.string(),
+        priorityNumber: z.number(),
+        wcs: z.string(),
+        _count: z.object({
+            candidates: z.number()
+        })
+    }))
+}); 
 
 export const dataTableSchema = z.array(schema)
 export default function Page() {
@@ -63,10 +76,22 @@ export default function Page() {
     }
   }, [token, router])
 
-  const [data, loading, error, setUpdate] = usePositionData(
-    apiUrl || "",
-    token || ""
-  )
+  // const [data, loading, error, setUpdate] = usePositionData(
+  //   apiUrl || "",
+  //   token || ""
+  // )
+
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['getPositions'],
+    queryFn: () =>
+      fetch(`${apiUrl}/admin/position/getPositions`, {
+        headers: {
+          "X-Token": `${token}`,
+        },
+      }).then(async (res) =>
+        positionDataSchema.parse(await res.json()),
+      ),
+  })
 
   useEffect(() => {
     console.log("Data updated:", data)
@@ -114,10 +139,10 @@ export default function Page() {
         <div className="mt-5">
           <CreatePositionDrawer data={copy} apiUrl={apiUrl || ""} token={token || ""} />
           {/* <Separator className="mb-4" /> */}
-          {loading && <p>Loading...</p>}
-          {error && <p>{error}</p>}
+          {isLoading && <p>Loading...</p>}
+          {error && <p>{error.message}</p>}
 
-          {!loading && !error && (
+          {!isLoading && !error && (
             <DataTable
               data={dateTableData}
               apiURL={apiUrl || ""}
