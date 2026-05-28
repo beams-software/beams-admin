@@ -395,7 +395,6 @@ export function DataTable({
     } else {
       if (data.length > 0) {
         console.log(token)
-        // TODO: Send updated priority to backend
         console.log("Priority updated:", data)
         console.log("Previous data:", prevData)
         await axios.post(
@@ -724,7 +723,7 @@ function TableCellViewer({
                 if (updateFormRef.current.reportValidity()) {
                   if (wcs.length != 0) {
                     // console.log(new FormData(updateFormRef.current).get("positionName"), wcs, item.id, item.priorityNumber);
-                    // TODO: make wcs as string and send updated position to the backend
+                    
                     const wcsString: string = wcs
                       .map((wc) => wcsData[wc as keyof typeof wcsData])
                       .join(";")

@@ -30,6 +30,10 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Pencil, Trash2Icon } from "lucide-react"
+import { useEffect } from "react"
+import { EditCandidateDrawer } from "./edit-candidate-drawer"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import axios from "axios"
 
 const navBar = getNavBar(NavBarItemType.ViewCandidates)
 
@@ -61,10 +65,14 @@ function CandidateTable({
   data,
   apiUrl,
   token,
+  nameOfPosition,
+  positionId,
 }: {
   data: z.infer<typeof CandidateSchema>[]
   apiUrl: string
-  token: string
+  token: string,
+  nameOfPosition: string
+  positionId: number
 }) {
   return (
     <Table>
@@ -110,15 +118,58 @@ function CandidateTable({
               />
             </TableCell>
             <TableCell>
-              <div className="flex flex-col gap-2 w-[75%]">
-                <Button variant="outline" size="sm">
-                  <Pencil className="mr-2 h-4 w-4" /> 
-                  Edit
-                </Button>
-                <Button variant="destructive" size="sm">
+              <div className="flex w-[75%] flex-col gap-2">
+                <EditCandidateDrawer
+                  apiUrl={apiUrl || ""}
+                  token={token || ""}
+                  nameOfPosition={
+                    nameOfPosition
+                  }
+                  positionId={
+                    positionId
+                  }
+                  candidate={candidate}
+                />
+                
+                <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm">
                   <Trash2Icon className="mr-2 h-4 w-4" />
                   Delete
                 </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent size="sm">
+                  <AlertDialogHeader>
+                    <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+                      <Trash2Icon />
+                    </AlertDialogMedia>
+                    <AlertDialogTitle>Delete candidate?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete this candidate "{candidate.name}" for the position "{nameOfPosition}". {" "}
+                      <span className="font-bold text-destructive">
+                        This will also delete all associated data & votes and cannot be undone.
+                      </span>
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel variant="outline">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      variant="destructive"
+                      onClick={async () => {
+                        await axios.delete(
+                          `${apiUrl}/admin/candidate/deleteCandidate/${candidate.admid}`,
+                           { headers: { "X-Token": token } }
+                        )
+                        window.location.reload();
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
               </div>
             </TableCell>
           </TableRow>
@@ -137,6 +188,12 @@ export default function Page() {
   const token =
     typeof window !== "undefined" ? sessionStorage.getItem("token") : null
 
+  useEffect(() => {
+    if (!token) {
+      router.push("/login")
+    }
+  }, [token, router])
+  
   const { isLoading, error, data } = useQuery({
     queryKey: ["positionData", params.position_id],
     queryFn: async () => {
@@ -177,9 +234,11 @@ export default function Page() {
                 <BreadcrumbItem>
                   <BreadcrumbPage>
                     Candidates for{" "}
-                    {data?.result && typeof data.result !== "string"
-                      ? <strong>{data.result.name}</strong>
-                      : "..."}
+                    {data?.result && typeof data.result !== "string" ? (
+                      <strong>{data.result.name}</strong>
+                    ) : (
+                      "..."
+                    )}
                   </BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -213,10 +272,12 @@ export default function Page() {
                       data={data.result.candidates}
                       apiUrl={apiUrl || ""}
                       token={token || ""}
+                      nameOfPosition={data.result.name}
+                      positionId={data.result.id}
                     />
                   </div>
 
-                  <pre>{JSON.stringify(data.result, null, 2)}</pre>
+                  {/* <pre>{JSON.stringify(data.result, null, 2)}</pre> */}
                 </>
               )
             }
