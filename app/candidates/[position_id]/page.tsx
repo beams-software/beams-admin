@@ -175,6 +175,17 @@ function CandidateTable({
           </TableRow>
         ))}
       </TableBody>
+      {
+        data.length === 0 && (
+          <TableBody>
+            <TableRow>
+              <TableCell colSpan={7} className="text-center">
+                No candidates found for this position.
+              </TableCell>
+            </TableRow>
+          </TableBody>
+        )
+      }
     </Table>
   )
 }

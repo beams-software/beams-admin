@@ -77,6 +77,17 @@ function PositionTable({
           </TableRow>
         ))}
       </TableBody>
+      {
+        response.result.length === 0 && (
+          <TableFooter>
+            <TableRow>
+              <TableCell colSpan={4} className="text-center">
+                No positions found.
+              </TableCell>
+            </TableRow>
+          </TableFooter>
+        )
+      }
     </Table>
     )
 }
