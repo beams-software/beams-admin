@@ -27,8 +27,10 @@ import { Button } from "@/components/ui/button"
 import { useQuery } from "@tanstack/react-query"
 import { useEffect } from "react"
 import { useTransitionRouter } from "next-view-transitions"
-import { z } from "zod"
+import { success, z } from "zod"
 import { CreateVoterDrawer } from "./create-voter-drawer"
+import { useSearchParams } from "next/navigation"
+import { toast } from "sonner"
 
 const navBar = getNavBar(NavBarItemType.ViewVoters)
 const gradeAndCountSchema = z.object({
@@ -46,7 +48,11 @@ function VotersTableMain({
 }: {
   data: z.infer<typeof gradeAndCountSchema>
 }) {
-  const funData = [{grade: 1, count:10}, {grade: 2, count:100}]
+  const funData = [
+    { grade: 1, count: 10 },
+    { grade: 2, count: 100 },
+  ]
+  const router = useTransitionRouter();
   return (
     <Table>
       <TableHeader>
@@ -63,16 +69,14 @@ function VotersTableMain({
             {data.result.reduce((sum, current) => sum + current.count, 0)}
           </TableCell>
           <TableCell>
-            <Button>View Voters</Button>
+            <Button onClick={() => router.push("/voters/ALL")}>View Voters</Button>
           </TableCell>
         </TableRow>
         {data.result.map((v) => {
           return (
             <TableRow key={v.grade}>
               <TableCell className="font-medium">{v.grade}</TableCell>
-              <TableCell>
-                {v.count}
-              </TableCell>
+              <TableCell>{v.count}</TableCell>
               <TableCell>
                 <Button>View Voters</Button>
               </TableCell>
@@ -91,11 +95,22 @@ export default function Page() {
   const token =
     typeof window !== "undefined" ? sessionStorage.getItem("token") : null
   const router = useTransitionRouter()
+
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const successMessage = searchParams.get("successToast")
+    if (successMessage) {
+      toast.success(successMessage, { position: "top-center" })
+    }
+  }, [searchParams])
+
   useEffect(() => {
     if (!token) {
       router.push("/login")
     }
   }, [token, router])
+
   const { isLoading, error, data } = useQuery({
     queryKey: ["getGradesAndCount"],
     queryFn: () =>
@@ -105,6 +120,7 @@ export default function Page() {
         },
       }).then(async (res) => gradeAndCountSchema.parse(await res.json())),
   })
+
   useEffect(() => {
     if (error) {
       console.error("Error fetching grades and count:", error)
@@ -113,6 +129,7 @@ export default function Page() {
       console.log("Grades and count data:", data)
     }
   }, [error, data])
+
   return (
     <SidebarProvider>
       <AppSidebar data={navBar} />
@@ -139,8 +156,8 @@ export default function Page() {
         </header>
         <div className="mx-6 mt-5">
           <div className="flex flex-row gap-2">
-            <CreateVoterDrawer apiUrl={apiUrl || ""}  token={token || ""}/>
-            <Button variant="outline">Create Voter Via Excel</Button>
+            <CreateVoterDrawer apiUrl={apiUrl || ""} token={token || ""} />
+            <Button variant="outline">Create Voters Via Excel</Button>
           </div>
           <div className="mt-3 rounded-3xl border-2 p-4">
             {data && <VotersTableMain data={data} />}

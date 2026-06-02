@@ -69,6 +69,7 @@ export function CreateVoterDrawer({
   const [voted, setVoted] = useState("false")
   const [changeAbsent, setChangeAbsent] = useState(false)
   const [absent, setAbsent] = useState("false")
+  const [drawerOpen, setDrawerOpen] = useState(false);
   return (
     <Drawer
       direction={isMobile ? "bottom" : "right"}
@@ -79,6 +80,8 @@ export function CreateVoterDrawer({
         setAbsent("false");
         setError("")
       }}
+      open={drawerOpen}
+      onOpenChange={setDrawerOpen}
     >
       <DrawerTrigger asChild>
         <Button>Create Voter</Button>
@@ -228,7 +231,8 @@ export function CreateVoterDrawer({
                     }
                   });
                   if (reqdata.data.success) {
-                    window.location.reload()
+                    setDrawerOpen(false);
+                    router.push(`/voters?successToast=${encodeURIComponent("Created Voter!")}`)
                     // console.log("ok")
                   }else{
                     if (reqdata.data.error.code == "P2002") {

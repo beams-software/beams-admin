@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils"
 import { TooltipProvider } from "@/components/ui/tooltip"
 import { ViewTransitions } from "next-view-transitions"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
-
+import { Toaster } from "@/components/ui/sonner"
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 const fontMono = Geist_Mono({
@@ -19,8 +19,7 @@ const queryClient = new QueryClient()
 
 declare global {
   interface Window {
-    __TANSTACK_QUERY_CLIENT__:
-      import('@tanstack/query-core').QueryClient
+    __TANSTACK_QUERY_CLIENT__: import("@tanstack/query-core").QueryClient
   }
 }
 
@@ -30,7 +29,7 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   if (typeof window !== "undefined") {
-  window.__TANSTACK_QUERY_CLIENT__ = queryClient
+    window.__TANSTACK_QUERY_CLIENT__ = queryClient
   }
   return (
     <ViewTransitions>
@@ -48,6 +47,7 @@ export default function RootLayout({
           <body>
             <ThemeProvider>
               <TooltipProvider>{children}</TooltipProvider>
+              <Toaster />
             </ThemeProvider>
           </body>
         </html>
