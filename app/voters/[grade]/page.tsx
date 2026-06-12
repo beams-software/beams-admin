@@ -14,7 +14,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { getNavBar, NavBarItemType } from "../constants"
+import { getNavBar, NavBarItemType } from "../../constants"
 import {
   Table,
   TableBody,
@@ -28,17 +28,17 @@ import { useQuery } from "@tanstack/react-query"
 import { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { useTransitionRouter } from "next-view-transitions"
 import { success, z } from "zod"
-import { CreateVoterDrawer } from "./create-voter-drawer"
-import { useSearchParams } from "next/navigation"
+import { CreateVoterDrawer } from "../create-voter-drawer"
+import { useParams, useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { useDidUpdateEffect } from "@/hooks/use-didUpdateEffect"
 
 const navBar = getNavBar(NavBarItemType.ViewVoters)
-const gradeAndCountSchema = z.object({
+const classAndCountSchema = z.object({
   status: z.number(),
   result: z.array(
     z.object({
-      grade: z.number(),
+      class: z.string(),
       count: z.number(),
     })
   ),
@@ -46,8 +46,10 @@ const gradeAndCountSchema = z.object({
 
 function VotersTableMain({
   data,
+  grade
 }: {
-  data: z.infer<typeof gradeAndCountSchema>
+  data: z.infer<typeof classAndCountSchema>
+  grade: number
 }) {
   
   const router = useTransitionRouter();
@@ -55,7 +57,7 @@ function VotersTableMain({
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Grade</TableHead>
+          <TableHead>Class</TableHead>
           <TableHead>Number of voters</TableHead>
           <TableHead>Click to view</TableHead>
         </TableRow>
@@ -67,16 +69,16 @@ function VotersTableMain({
             {data.result.reduce((sum, current) => sum + current.count, 0)}
           </TableCell>
           <TableCell>
-            <Button onClick={() => router.push("/voters/ALL")}>View Voters</Button>
+            <Button onClick={() => router.push(`/voters/${grade}/ALL`)}>View Voters</Button>
           </TableCell>
         </TableRow>
         {data.result.map((v) => {
           return (
-            <TableRow key={v.grade}>
-              <TableCell className="font-medium">{v.grade}</TableCell>
+            <TableRow key={v.class}>
+              <TableCell className="font-medium">{v.class}</TableCell>
               <TableCell>{v.count}</TableCell>
               <TableCell>
-                <Button onClick={() => router.push(`/voters/${v.grade}`)}>View Voters</Button>
+                <Button onClick={() => router.push(`/voters/${grade}/${v.class}`)}>View Voters</Button>
               </TableCell>
             </TableRow>
           )
@@ -87,6 +89,9 @@ function VotersTableMain({
 }
 
 export default function Page() {
+
+  const params = useParams();
+
   const apiUrl =
     typeof window !== "undefined" ? localStorage.getItem("API_URL") : null
 
@@ -112,21 +117,21 @@ export default function Page() {
   }, [token, router])
 
   const { isLoading, error, data, refetch } = useQuery({
-    queryKey: ["getGradesAndCount"],
+    queryKey: ["getGradesAndCount", params.grade],
     queryFn: () =>
-      fetch(`${apiUrl}/admin/voter/getGradesAndCount`, {
+      fetch(`${apiUrl}/admin/voter/getClassesAndCount/${params.grade}`, {
         headers: {
           "X-Token": `${token}`,
         },
-      }).then(async (res) => gradeAndCountSchema.parse(await res.json())),
+      }).then(async (res) => classAndCountSchema.parse(await res.json())),
   })
 
   useEffect(() => {
     if (error) {
-      console.error("Error fetching grades and count:", error)
+      console.error("Error fetching classes and count:", error)
     }
     if (data) {
-      console.log("Grades and count data:", data)
+      console.log("Classes and count data:", data)
     }
   }, [error, data])
 
@@ -144,12 +149,17 @@ export default function Page() {
             <Breadcrumb>
               <BreadcrumbList>
                 <BreadcrumbItem className="hidden md:block">
-                  <BreadcrumbPage>Voters</BreadcrumbPage>
+                  <BreadcrumbPage
+                    onClick={() => router.push("/voters")}
+                    className="relative cursor-pointer after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-white after:transition-all after:duration-300 hover:after:w-full"
+                  >
+                    Voters
+                  </BreadcrumbPage>
                 </BreadcrumbItem>
-                {/* <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
-                  <BreadcrumbPage>Data Fetching</BreadcrumbPage>
-                </BreadcrumbItem> */}
+                  <BreadcrumbPage>{params.grade}</BreadcrumbPage>
+                </BreadcrumbItem>
               </BreadcrumbList>
             </Breadcrumb>
           </div>
@@ -159,13 +169,17 @@ export default function Page() {
             <CreateVoterDrawer apiUrl={apiUrl || ""} token={token || ""} onSubmitSuccess={() => {
               refetch();
               toast.success("Created Voter!", { position: "top-center" })
-            }} />
+            }} 
+            defaultValues={{
+              grade: Number(params.grade)
+            }}
+            />
             <Button variant="outline" onClick={() => router.push("/createVotersExcel")}>
               Create Voters Via Excel
             </Button>
           </div>
           <div className="mt-3 rounded-3xl border-2 p-4">
-            {data && <VotersTableMain data={data} />}
+            {data && <VotersTableMain data={data} grade={Number(params.grade)} />}
           </div>
         </div>
       </SidebarInset>

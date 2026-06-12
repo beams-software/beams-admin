@@ -56,9 +56,16 @@ const voterSchema = z.object({
 export function CreateVoterDrawer({
   apiUrl,
   token,
+  onSubmitSuccess,
+  defaultValues
 }: {
   apiUrl: string
-  token: string
+  token: string,
+  onSubmitSuccess: () => void,
+  defaultValues?: {
+    grade?: number,
+    class?: string
+  }
 }) {
   const isMobile = useIsMobile()
 
@@ -119,7 +126,7 @@ export function CreateVoterDrawer({
               </div>
               <div className="flex flex-col gap-3">
                 <Label htmlFor="grade">Grade</Label>
-                <Input id="grade" name="grade" required type="number" />
+                <Input id="grade" name="grade" required type="number" defaultValue={defaultValues?.grade ?? ""} />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -138,7 +145,7 @@ export function CreateVoterDrawer({
               </div>
               <div className="flex flex-col gap-3">
                 <Label htmlFor="class">Class</Label>
-                <Input id="class" name="class" required></Input>
+                <Input id="class" name="class" required defaultValue={defaultValues?.class ?? ""}></Input>
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
@@ -232,8 +239,9 @@ export function CreateVoterDrawer({
                   });
                   if (reqdata.data.success) {
                     setDrawerOpen(false);
-                    router.push(`/voters?successToast=${encodeURIComponent("Created Voter!")}`)
+                    // router.push(`/voters?successToast=${encodeURIComponent("Created Voter!")}`)
                     // console.log("ok")
+                    onSubmitSuccess();
                   }else{
                     if (reqdata.data.error.code == "P2002") {
                       setError("Error: Someone with that admission id already exists")

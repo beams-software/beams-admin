@@ -46,7 +46,7 @@ export function EditCandidateDrawer({
     admid: number
     grade: number
     house: string
-    votes: number
+    startingVotes: number
     photo: string
     positionId: number
   }
@@ -162,7 +162,7 @@ export function EditCandidateDrawer({
                 </Select>
               </div>
               <div className="flex flex-col gap-3">
-                <Label htmlFor="startingVotes">Votes</Label>
+                <Label htmlFor="startingVotes">Starting Votes</Label>
                 {changeVotes ? (
                   <>
                     <Input
@@ -170,7 +170,7 @@ export function EditCandidateDrawer({
                       name="startingVotes"
                       required
                       type="number"
-                      defaultValue={String(candidate.votes)}
+                      defaultValue={String(candidate.startingVotes)}
                       hidden={!changeVotes}
                     />
                   </>
@@ -229,7 +229,7 @@ export function EditCandidateDrawer({
                   data.append("grade", String(grade))
                   data.append("name", String(name))
                   data.append("house", String(house))
-                  data.append("votes", String(votes))
+                  data.append("startingVotes", String(votes))
                   data.append("positionId", String(positionId))
                   data.append("changeVote", String(changeVotes))
                   data.append("photo", photo)

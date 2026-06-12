@@ -29,11 +29,27 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
-import { Pencil, Trash2Icon } from "lucide-react"
-import { useEffect } from "react"
+import { Info, Pencil, Trash2Icon } from "lucide-react"
+import { useEffect, useState } from "react"
 import { EditCandidateDrawer } from "./edit-candidate-drawer"
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog"
 import axios from "axios"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 const navBar = getNavBar(NavBarItemType.ViewCandidates)
 
@@ -42,9 +58,12 @@ export const CandidateSchema = z.object({
   admid: z.number(),
   grade: z.number(),
   house: z.string(),
-  votes: z.number(),
+  startingVotes: z.number(),
   photo: z.string(),
   positionId: z.number(),
+  _count: z.object({
+    votes: z.number(),
+  }),
 })
 
 export const PositionSchema = z.object({
@@ -70,10 +89,13 @@ function CandidateTable({
 }: {
   data: z.infer<typeof CandidateSchema>[]
   apiUrl: string
-  token: string,
+  token: string
   nameOfPosition: string
   positionId: number
 }) {
+  const [revealedCandidates, setRevealedCandidates] = useState<Set<number>>(
+    new Set()
+  )
   return (
     <Table>
       <TableHeader>
@@ -82,7 +104,22 @@ function CandidateTable({
           <TableHead>Admission Number</TableHead>
           <TableHead>Grade</TableHead>
           <TableHead>House</TableHead>
-          <TableHead>Votes (click to reveal)</TableHead>
+
+          <TableHead>
+            <div className="flex flex-row gap-1">
+              Votes (click to reveal)
+              <Tooltip>
+                <TooltipContent>
+                  <p>Total votes including starting votes</p>
+                </TooltipContent>
+                <TooltipTrigger asChild>
+                  <button>
+                    <Info className="h-4 w-4" />
+                  </button>
+                </TooltipTrigger>
+              </Tooltip>
+            </div>
+          </TableHead>
           <TableHead>Photo</TableHead>
           <TableHead>Actions</TableHead>
         </TableRow>
@@ -98,16 +135,40 @@ function CandidateTable({
               <Button
                 variant="outline"
                 size="sm"
-                onClick={(e) => {
-                  if (e.currentTarget.textContent?.startsWith("Reveal")) {
-                    e.currentTarget.textContent =
-                      "Votes: " + String(candidate.votes)
-                  } else {
-                    e.currentTarget.textContent = "Reveal"
-                  }
+                onClick={() => {
+                  setRevealedCandidates((prev) => {
+                    const next = new Set(prev)
+
+                    if (next.has(candidate.admid)) {
+                      next.delete(candidate.admid)
+                    } else {
+                      next.add(candidate.admid)
+                    }
+
+                    return next
+                  })
                 }}
               >
-                Reveal
+                {revealedCandidates.has(candidate.admid) ? (
+                  <div className="flex flex-row gap-1">
+                    Votes: {candidate._count.votes + candidate.startingVotes}
+                    <Tooltip>
+                      <TooltipContent>
+                        <div className="flex flex-col">
+                          <p>Legitimate votes: {candidate._count.votes}</p>
+                          <p>Starting votes: {candidate.startingVotes}</p>
+                        </div>
+                      </TooltipContent>
+                      <TooltipTrigger asChild>
+                        <span className="cursor-pointer inline-flex items-center">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </TooltipTrigger>
+                    </Tooltip>
+                  </div>
+                ) : (
+                  "Reveal"
+                )}
               </Button>
             </TableCell>
             <TableCell>
@@ -122,70 +183,66 @@ function CandidateTable({
                 <EditCandidateDrawer
                   apiUrl={apiUrl || ""}
                   token={token || ""}
-                  nameOfPosition={
-                    nameOfPosition
-                  }
-                  positionId={
-                    positionId
-                  }
+                  nameOfPosition={nameOfPosition}
+                  positionId={positionId}
                   candidate={candidate}
                 />
-                
+
                 <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" size="sm">
-                  <Trash2Icon className="mr-2 h-4 w-4" />
-                  Delete
-                </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent size="sm">
-                  <AlertDialogHeader>
-                    <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
-                      <Trash2Icon />
-                    </AlertDialogMedia>
-                    <AlertDialogTitle>Delete candidate?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will permanently delete this candidate "{candidate.name}" for the position "{nameOfPosition}". {" "}
-                      <span className="font-bold text-destructive">
-                        This will also delete all associated data & votes and cannot be undone.
-                      </span>
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel variant="outline">
-                      Cancel
-                    </AlertDialogCancel>
-                    <AlertDialogAction
-                      variant="destructive"
-                      onClick={async () => {
-                        await axios.delete(
-                          `${apiUrl}/admin/candidate/deleteCandidate/${candidate.admid}`,
-                           { headers: { "X-Token": token } }
-                        )
-                        window.location.reload();
-                      }}
-                    >
+                  <AlertDialogTrigger asChild>
+                    <Button variant="destructive" size="sm">
+                      <Trash2Icon className="mr-2 h-4 w-4" />
                       Delete
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent size="sm">
+                    <AlertDialogHeader>
+                      <AlertDialogMedia className="bg-destructive/10 text-destructive dark:bg-destructive/20 dark:text-destructive">
+                        <Trash2Icon />
+                      </AlertDialogMedia>
+                      <AlertDialogTitle>Delete candidate?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This will permanently delete this candidate "
+                        {candidate.name}" for the position "{nameOfPosition}".{" "}
+                        <span className="font-bold text-destructive">
+                          This will also delete all associated data & votes and
+                          cannot be undone.
+                        </span>
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel variant="outline">
+                        Cancel
+                      </AlertDialogCancel>
+                      <AlertDialogAction
+                        variant="destructive"
+                        onClick={async () => {
+                          await axios.delete(
+                            `${apiUrl}/admin/candidate/deleteCandidate/${candidate.admid}`,
+                            { headers: { "X-Token": token } }
+                          )
+                          window.location.reload()
+                        }}
+                      >
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
             </TableCell>
           </TableRow>
         ))}
       </TableBody>
-      {
-        data.length === 0 && (
-          <TableBody>
-            <TableRow>
-              <TableCell colSpan={7} className="text-center">
-                No candidates found for this position.
-              </TableCell>
-            </TableRow>
-          </TableBody>
-        )
-      }
+      {data.length === 0 && (
+        <TableBody>
+          <TableRow>
+            <TableCell colSpan={7} className="text-center">
+              No candidates found for this position.
+            </TableCell>
+          </TableRow>
+        </TableBody>
+      )}
     </Table>
   )
 }
@@ -204,7 +261,7 @@ export default function Page() {
       router.push("/login")
     }
   }, [token, router])
-  
+
   const { isLoading, error, data } = useQuery({
     queryKey: ["positionData", params.position_id],
     queryFn: async () => {
@@ -236,7 +293,7 @@ export default function Page() {
                 <BreadcrumbItem className="hidden md:block">
                   <BreadcrumbPage
                     onClick={() => router.push("/candidates")}
-                     className="relative after:bg-white after:absolute after:h-0.5 after:w-0 after:bottom-0 after:left-0 hover:after:w-full after:transition-all after:duration-300 cursor-pointer"
+                    className="relative cursor-pointer after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-white after:transition-all after:duration-300 hover:after:w-full"
                   >
                     Candidates
                   </BreadcrumbPage>

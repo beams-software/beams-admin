@@ -14,7 +14,7 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar"
-import { getNavBar, NavBarItemType } from "../../constants"
+import { getNavBar, NavBarItemType } from "../../../constants"
 import { useTransitionRouter } from "next-view-transitions"
 import { useEffect, useMemo, useRef, useState } from "react"
 import { ReactHeaderObject, SimpleTable } from "@simple-table/react"
@@ -32,6 +32,7 @@ import { z } from "zod"
 import axios from "axios"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { CircleAlert, Trash2Icon } from "lucide-react"
+import { useParams } from "next/navigation"
 
 const navBar = getNavBar(NavBarItemType.ViewVoters)
 
@@ -68,18 +69,20 @@ const VotersResponseSchema = z.object({
 const AllVoterTable = ({
   apiUrl,
   token,
+  grade
 }: {
   apiUrl: string | null
   token: string | null
+  grade: number
 }) => {
   const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set())
 
   const selectAllRef = useRef<HTMLInputElement>(null)
 
   const { isLoading, error, data, refetch: refetchVoters } = useQuery({
-    queryKey: ["getVoters"],
+    queryKey: ["getVoters", grade],
     queryFn: () =>
-      fetch(`${apiUrl}/admin/voter/getDetailedVoters`, {
+      fetch(`${apiUrl}/admin/voter/getVotersByGrade/${grade}`, {
         headers: {
           "X-Token": `${token}`,
         },
@@ -90,11 +93,20 @@ const AllVoterTable = ({
     data?.result.map((voter) => ({
       admid: voter.admid,
       name: voter.name,
-      grade_class: `${voter.grade}-${voter.class}`,
+      grade: voter.grade,
+      class: voter.class,
       house: voter.house,
       voted: voter.voted ? "VOTED" : "NOT VOTED",
       absent: voter.votedInfo.absent ? "ABSENT" : "PRESENT",
     })) ?? []
+
+  const listOfClasses = data
+    ? Array.from(new Set(data.result.map((voter) => voter.class)))
+        .map((className) => ({
+          label: className,
+          value: className,
+        }))
+    : []
 
   useEffect(() => {
     if (error) {
@@ -150,17 +162,26 @@ const AllVoterTable = ({
     {
       accessor: "name",
       label: "Name",
-      width: "19%",
+      width: "14%",
       filterable: true,
       type: "string",
       isSortable: true,
     },
     {
-      accessor: "grade_class",
-      label: "Grade-Class",
-      width: "15%",
+      accessor: "grade",
+      label: "Grade",
+      width: "10%",
       filterable: true,
-      type: "string",
+      type: "number",
+      isSortable: true,
+    },
+     {
+      accessor: "class",
+      label: "Class",
+      width: "10%",
+      filterable: true,
+      type: "enum",
+      enumOptions: listOfClasses,
       isSortable: true,
     },
     {
@@ -419,6 +440,9 @@ const AllVoterTable = ({
 }
 
 export default function Page() {
+
+  const params = useParams();
+
   const apiUrl =
     typeof window !== "undefined" ? localStorage.getItem("API_URL") : null
 
@@ -456,6 +480,15 @@ export default function Page() {
                 </BreadcrumbItem>
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
+                  <BreadcrumbPage
+                    onClick={() => router.push(`/voters/${params.grade}`)}
+                    className="relative cursor-pointer after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-white after:transition-all after:duration-300 hover:after:w-full"
+                  >
+                    {params.grade}
+                  </BreadcrumbPage>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator className="hidden md:block" />
+                <BreadcrumbItem>
                   <BreadcrumbPage>ALL</BreadcrumbPage>
                 </BreadcrumbItem>
               </BreadcrumbList>
@@ -463,7 +496,7 @@ export default function Page() {
           </div>
         </header>
         <div className="m-5">
-          <AllVoterTable apiUrl={apiUrl} token={token} />
+          <AllVoterTable apiUrl={apiUrl} token={token} grade={Number(params.grade)} />
         </div>
       </SidebarInset>
     </SidebarProvider>
