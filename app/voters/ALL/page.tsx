@@ -59,6 +59,49 @@ const VoterSchema = z.object({
   }),
 })
 
+const detailVoterSchema = z.object({
+  admid: z.number(),
+  name: z.string(),
+  grade: z.number(),
+  class: z.string(),
+  house: z.string(),
+  voted: z.boolean(),
+  votedInfo: z.object({
+    createdAt: z.string().default(() => new Date().toISOString()),
+    editedAt: z.string().default(() => new Date().toISOString()),
+    absent: z.stringbool().default(false).or(z.boolean().default(false)),
+    votingData: z
+      .object({
+        votedAt: z.string(),
+        votedComputer: z.string(),
+        toWho: z.array(
+          z.object({ positionId: z.number(), candidateAdmId: z.number() })
+        ),
+      })
+      .or(z.object({}))
+      .default({}),
+  }),
+  votes: z.array(
+    z.object({
+      id: z.number(),
+      positionId: z.number(),
+      voterAdmid: z.number(),
+      candidateAdmid: z.number(),
+      createdAt: z.coerce.date(),
+
+      position: z.object({
+        name: z.string(),
+      }),
+
+      candidate: z.object({
+        name: z.string(),
+      }),
+    })
+  ),
+});
+
+const responseOfDetailVoterSchema = z.object({ result: detailVoterSchema.nullable() })
+
 const VotersResponseSchema = z.object({
   status: z.number(),
   error: z.string().optional(),
@@ -101,6 +144,68 @@ const AllVoterTable = ({
       console.error("Error fetching voters:", error)
     }
   }, [error, data])
+
+
+  const ViewDetailsModal = ({admid} : {admid: string}) => {
+
+    const [resp, setresp] = useState<z.infer<typeof responseOfDetailVoterSchema> | null>(null)
+
+    return (
+      <AlertDialog onOpenChange={async (p) => {
+        if (p) {
+          const res = await axios.get(`${apiUrl}/admin/voter/getVoterDetail/${admid}`, {
+                headers: {
+                  "X-Token": token
+                }
+              })
+          const voterDetail = responseOfDetailVoterSchema.parse(res.data)
+          setresp(voterDetail)
+        }
+      }} >
+        <AlertDialogTrigger asChild>
+          <button 
+            className="group/dropdown-menu-item relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm outline-hidden select-none hover:bg-accent focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-inset:pl-8 data-[variant=destructive]:text-destructive data-[variant=destructive]:focus:bg-destructive/10 data-[variant=destructive]:focus:text-destructive dark:data-[variant=destructive]:focus:bg-destructive/20 data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 data-[variant=destructive]:*:[svg]:text-destructive"
+          >View Details</button>
+        </AlertDialogTrigger>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Voter details for : {resp?.result?.name} ({resp?.result?.admid})</AlertDialogTitle>
+            <div className="grid grid-cols-2">
+              <p className="text-sm text-muted-foreground">Name : {resp?.result?.name}</p>
+                <p className="text-sm text-muted-foreground">Admission Number: {resp?.result?.admid}</p>
+                <p className="text-sm text-muted-foreground">House: {resp?.result?.house}</p>
+                <p className="text-sm text-muted-foreground">Grade: {resp?.result?.grade}</p>
+                <p className="text-sm text-muted-foreground">Class: {resp?.result?.class}</p>
+                <p className="text-sm text-muted-foreground">Voted: {resp?.result?.voted ? "YES": "NO"}</p>
+                <p className="text-sm text-muted-foreground">Absent: {resp?.result?.votedInfo.absent ? "YES": "NO"}</p>
+                <p className="text-sm text-muted-foreground">Created At: {new Date(resp?.result?.votedInfo.createdAt || "").toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Edited At: {new Date(resp?.result?.votedInfo.editedAt || "").toLocaleString()}</p>
+                <p className="text-sm text-muted-foreground">Voted At: {resp?.result?.voted ? new Date(resp?.result?.votedInfo.votingData.votedAt || "").toLocaleString() : "-"}</p>
+                <p className="text-sm text-muted-foreground">Voted Computer: {resp?.result?.voted ? resp.result.votedInfo.votingData.votedComputer : "-"}</p>
+            </div>
+            <Separator/>
+            <div className="grid grid-flow-row">
+              {
+                resp?.result?.votes.map(v => {
+                  return (
+                    <div className="grid grid-cols-3" key={v.positionId}>
+                      <p className="text-sm text-muted-foreground">{v.position.name}</p>
+                      <p className="text-sm text-muted-foreground justify-self-center">:</p>
+                      <p className="text-sm text-muted-foreground">{v.candidate.name}</p>
+                    </div>
+                  )
+                })
+              }  
+            </div>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Close</AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    )
+  }
+
 
   const headers: ReactHeaderObject[] = [
     {
@@ -218,7 +323,7 @@ const AllVoterTable = ({
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent>
-            <DropdownMenuItem>View Details</DropdownMenuItem>
+            <ViewDetailsModal admid={r.row.admid ? r.row.admid.toString() : ""}/>
           </DropdownMenuContent>
         </DropdownMenu>
       ),
@@ -399,6 +504,12 @@ const AllVoterTable = ({
                   </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
+            <Button
+              variant={"outline"}
+              onClick={() => {
+                refetchVoters();
+              }}
+            >Refresh Data</Button>
           </div>
           <SimpleTable
             defaultHeaders={headers}
