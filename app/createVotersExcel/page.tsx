@@ -134,6 +134,20 @@ export default function Page() {
                 Download Example File
               </Button>
             </a>
+            <p className="font-bold text-destructive mt-2">Rules:</p>
+            <code className="whitespace-break-spaces">
+              1. The first row of the spreadsheet should EXACTLY match the one given in the image. {"\n"}
+              2. Only 1 sheet is allowed in the spreadsheet. {"\n"}
+              3. .xlsx file is recommended. {"\n"}
+              4. It is recommended to upload only 1 file per grade. {"\n"}
+              <strong className="text-destructive">VALUE RULES:</strong> {"\n"}
+              admid - This must be a NUMBER. The number is UNIQUE to every voter. No duplicates are allowed  {"\n"}
+              name  - This can be alphanumeric, there are no restrictions.  {"\n"}
+              grade - This must be a NUMBER. It can ONLY RANGE FROM 3 to 12.  {"\n"}
+              class - This can be alphanumeric, recommended to keep it short.  {"\n"}
+              house - This must be only <strong>WINTER or SUMMER or SPRING</strong> . Lowercase is not allowed {"\n"}
+              <strong className="text-destructive">IF THE DATA DOES NOT FOLLOW THE RULES THEN THERE WILL BE ERRORS!</strong>
+            </code>
           </>
         )
       case UploadStatus.Uploading:
