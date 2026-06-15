@@ -185,7 +185,7 @@ export function AppSidebar({data ,...props }: { data: sidebarItems, props?:React
                   <GalleryVerticalEndIcon className="size-4" />
                 </div>
                 <div className="flex flex-col gap-0.5 leading-none">
-                  <span className="font-medium">Documentation</span>
+                  <span className="font-medium">Admin Panel</span>
                   <span className="">v1.0.0</span>
                 </div>
               </a>

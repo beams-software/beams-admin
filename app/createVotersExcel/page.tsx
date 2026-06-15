@@ -41,6 +41,7 @@ enum UploadStatus {
   HeaderError,
   ParsingError,
   ConflictError,
+  ConflictWithinExcelFile,
   UnknownError,
 }
 
@@ -76,6 +77,7 @@ export default function Page() {
   const [status, setStatus] = useState<UploadStatus>(UploadStatus.Idle)
   const [fileName, setFileName] = useState<string>("")
   const [file, setFile] = useState<File | null>(null)
+  const [zodError, setZodError] = useState("");
   const [conflicts, setConflicts] = useState<Conflicts[] | null>(null)
   const renderInside = (statusOfUpload: UploadStatus) => {
     switch (statusOfUpload) {
@@ -162,9 +164,18 @@ export default function Page() {
                 if (res.status === 200) {
                   if (res.data.status === 200) {
                     setStatus(UploadStatus.Success)
+                    setZodError(res.data.result)
                   } else if (res.data.status === 401) {
                     setConflicts(res.data.conflicts)
                     setStatus(UploadStatus.ConflictError)
+                  }else if (res.data.status === 500 && res.data.error.code === "P2002") {
+                    setStatus(UploadStatus.ConflictWithinExcelFile)
+                  }else if (res.data.status === 402){
+                    setZodError(res.data.error.message);
+                    setStatus(UploadStatus.ParsingError)
+                    console.log(res.data)
+                  }else {
+                    console.log(res.data)
                   }
                 }
               }}
@@ -246,11 +257,53 @@ export default function Page() {
         return (
           <>
             <p>The Header of the file is not according to the format given!</p>
-            <Button onClick={() => {}}>
+            <Button onClick={() => {window.location.reload()}}>
               Re-Upload <Spinner />
             </Button>
           </>
         )
+      case UploadStatus.ConflictWithinExcelFile:
+        return (
+          <>
+          <p>There are conflicting admission ids inside the excel file itself!</p>
+          <Button onClick={() => {window.location.reload()}}>
+              Re-Upload <Spinner />
+          </Button>
+          </>
+        )
+      case UploadStatus.ParsingError:
+        return (
+          <>
+          <p>Please check all the values in the excel sheet. They do not follow the rules mentioned.</p>
+          <Button onClick={() => {window.location.reload()}}>
+              Re-Upload <Spinner />
+          </Button>
+          <code className="whitespace-pre">
+            {JSON.stringify(JSON.parse(zodError), null, 4)}
+          </code>
+          </>
+        )
+      case UploadStatus.UnknownError:
+        return (
+          <>
+          <p>Unknow Error Try again!</p>
+          <Button onClick={() => {window.location.reload()}}>
+              Re-Upload <Spinner />
+          </Button>
+          </>
+        )
+      case UploadStatus.Success:
+        return (
+          <>
+          <p>Uploaded Successfully!</p>
+          <Button onClick={() => {window.location.reload()}}>
+              Re-Upload <Spinner />
+          </Button>
+          <code className="whitespace-pre">
+            {zodError}
+          </code>
+          </>
+        )  
     }
   }
 

@@ -15,7 +15,8 @@ export enum NavBarItemType {
   Dashboard,
   ViewPositions,
   ViewCandidates,
-  ViewVoters
+  ViewVoters,
+  ViewLiveFeed
 }
 
 export function getNavBar(activeItem: NavBarItemType) {
@@ -40,6 +41,11 @@ export function getNavBar(activeItem: NavBarItemType) {
         title: "Voters",
         url: "/voters",
         isActive: false,
+      },
+      {
+        title: "Live Feed",
+        url: "/live-feed",
+        isActive: false,
       }
     ],
   }
@@ -56,6 +62,9 @@ export function getNavBar(activeItem: NavBarItemType) {
       break
     case NavBarItemType.ViewVoters:
       navBar.navMain[3].isActive = true
+      break
+    case NavBarItemType.ViewLiveFeed:
+      navBar.navMain[4].isActive = true
       break
   }
   return navBar
