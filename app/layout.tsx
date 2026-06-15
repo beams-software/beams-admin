@@ -8,6 +8,7 @@ import { TooltipProvider } from "@/components/ui/tooltip"
 import { ViewTransitions } from "next-view-transitions"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { Toaster } from "@/components/ui/sonner"
+import { Suspense } from "react"
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" })
 
 const fontMono = Geist_Mono({
@@ -45,10 +46,12 @@ export default function RootLayout({
           )}
         >
           <body>
-            <ThemeProvider>
-              <TooltipProvider>{children}</TooltipProvider>
-              <Toaster />
-            </ThemeProvider>
+            <Suspense fallback={<div>Loading...</div>}>
+              <ThemeProvider>
+                <TooltipProvider>{children}</TooltipProvider>
+                <Toaster />
+              </ThemeProvider>
+            </Suspense>
           </body>
         </html>
       </QueryClientProvider>

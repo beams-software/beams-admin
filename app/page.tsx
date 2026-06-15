@@ -14,6 +14,7 @@ export default function Page() {
   useEffect(() => {
     if (!token) {
       router.push("/login")
+      return;
     }
 
     if (apiUrl) {
