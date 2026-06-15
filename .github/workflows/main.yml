@@ -29,7 +29,7 @@ jobs:
 
       - run: npm run build:electron
 
-      - run: npx electron-builder --win
+      - run: npx electron-builder --win --publish always
         working-directory: electron
 
       - name: Upload to GitHub Release
