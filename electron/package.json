@@ -1,6 +1,6 @@
 {
   "name": "beams-admin-electron",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "An administrator app specifically tailored for BSC Elections at Blossom Public School",
   "license": "ISC",
   "author": "Ritheesh",
@@ -24,13 +24,13 @@
       "target": [
         {
           "target": "nsis",
-          "artifactName": "Blossom-Voting-Admin-Panel-Setup-${version}.${ext}",
           "arch": [
             "x64",
             "ia32"
           ]
         }
-      ]
+      ],
+      "artifactName": "Blossom-Voting-Admin-Panel-Setup-${version}.${ext}",
     },
     "nsis": {
       "oneClick": false,
