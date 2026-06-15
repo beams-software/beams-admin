@@ -1,6 +1,6 @@
 {
   "name": "beams-admin-electron",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "An administrator app specifically tailored for BSC Elections at Blossom Public School",
   "license": "ISC",
   "author": "Ritheesh",
@@ -9,14 +9,7 @@
   "build": {
     "appId": "me.ritheesh.beams-admin",
     "productName": "Blossom Voting Admin Panel",
-    "publish": [
-      {
-        "provider": "github",
-        "owner": "beams-software",
-        "repo": "beams-admin",
-        "releaseType": "release"
-      }
-    ],
+    "publish": null,
     "files": [
       "dist-electron/**/*",
       "out/**/*",
