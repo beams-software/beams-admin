@@ -30,7 +30,7 @@
           ]
         }
       ],
-      "artifactName": "Blossom-Voting-Admin-Panel-Setup-${version}.${ext}",
+      "artifactName": "Blossom-Voting-Admin-Panel-Setup-${version}.${ext}"
     },
     "nsis": {
       "oneClick": false,
