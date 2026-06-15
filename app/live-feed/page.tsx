@@ -215,6 +215,9 @@ export default function Page() {
             />
             <Label htmlFor="airplane-mode">Candidates</Label>
           </div>
+          <div className="self-center">
+            <Button variant={"outline"} onClick={typeof window !== "undefined" ? window.print : () => {}}>Print</Button>
+          </div>
         </div>
         {!showCandidates ? (
           <>
