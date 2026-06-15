@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/sidebar"
 import { useQuery } from "@tanstack/react-query"
 import { useTransitionRouter } from "next-view-transitions"
-import { useParams } from "next/navigation"
+import { useParams, useSearchParams } from "next/navigation"
 import { z } from "zod"
 import { CreateCandidateDrawer } from "./create-candidate-drawer"
 import {
@@ -248,7 +248,11 @@ function CandidateTable({
 }
 
 export default function Page() {
-  const params = useParams()
+  const searchParams = useSearchParams()
+  const params = {
+    position_id: searchParams.get("position_id")
+  }
+
   const router = useTransitionRouter()
   const apiUrl =
     typeof window !== "undefined" ? localStorage.getItem("API_URL") : null

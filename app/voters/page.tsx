@@ -76,7 +76,7 @@ function VotersTableMain({
               <TableCell className="font-medium">{v.grade}</TableCell>
               <TableCell>{v.count}</TableCell>
               <TableCell>
-                <Button onClick={() => router.push(`/voters/${v.grade}`)}>View Voters</Button>
+                <Button onClick={() => router.push(`/voters/grade?grade=${v.grade}`)}>View Voters</Button>
               </TableCell>
             </TableRow>
           )

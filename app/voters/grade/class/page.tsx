@@ -32,7 +32,7 @@ import { z } from "zod"
 import axios from "axios"
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogMedia, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog"
 import { CircleAlert, Trash2Icon } from "lucide-react"
-import { useParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { CreateVoterDrawer } from "../../create-voter-drawer"
 import { toast } from "sonner"
 
@@ -562,7 +562,12 @@ const AllVoterTable = ({
 
 export default function Page() {
 
-  const params = useParams();
+  const searchParams = useSearchParams();
+
+  const params = {
+    class: searchParams.get("class"),
+    grade: searchParams.get("grade")
+  }
 
   const apiUrl =
     typeof window !== "undefined" ? localStorage.getItem("API_URL") : null
@@ -602,7 +607,7 @@ export default function Page() {
                 <BreadcrumbSeparator className="hidden md:block" />
                 <BreadcrumbItem>
                   <BreadcrumbPage
-                    onClick={() => router.push(`/voters/${params.grade}`)}
+                    onClick={() => router.push(`/voters/grade?grade=${params.grade}`)}
                     className="relative cursor-pointer after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0 after:bg-white after:transition-all after:duration-300 hover:after:w-full"
                   >
                     {params.grade}

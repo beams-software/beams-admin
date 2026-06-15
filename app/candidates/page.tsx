@@ -73,7 +73,7 @@ function PositionTable({
               return <p key={wci}>{wcName}</p>
             })}</TableCell>
             <TableCell>{position._count.candidates}</TableCell>
-            <TableCell className="text-right"><Button onClick={() => router.push(`/candidates/${position.id}`)}>View Candidates</Button></TableCell>
+            <TableCell className="text-right"><Button onClick={() => router.push(`/candidates/candidate?position_id=${position.id}`)}>View Candidates</Button></TableCell>
           </TableRow>
         ))}
       </TableBody>

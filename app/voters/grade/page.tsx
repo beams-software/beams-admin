@@ -29,7 +29,7 @@ import { Dispatch, SetStateAction, useEffect, useState } from "react"
 import { useTransitionRouter } from "next-view-transitions"
 import { success, z } from "zod"
 import { CreateVoterDrawer } from "../create-voter-drawer"
-import { useParams, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { toast } from "sonner"
 import { useDidUpdateEffect } from "@/hooks/use-didUpdateEffect"
 
@@ -69,7 +69,7 @@ function VotersTableMain({
             {data.result.reduce((sum, current) => sum + current.count, 0)}
           </TableCell>
           <TableCell>
-            <Button onClick={() => router.push(`/voters/${grade}/ALL`)}>View Voters</Button>
+            <Button onClick={() => router.push(`/voters/grade/ALL?grade=${grade}`)}>View Voters</Button>
           </TableCell>
         </TableRow>
         {data.result.map((v) => {
@@ -78,7 +78,7 @@ function VotersTableMain({
               <TableCell className="font-medium">{v.class}</TableCell>
               <TableCell>{v.count}</TableCell>
               <TableCell>
-                <Button onClick={() => router.push(`/voters/${grade}/${v.class}`)}>View Voters</Button>
+                <Button onClick={() => router.push(`/voters/grade/class?grade=${grade}&class=${v.class}`)}>View Voters</Button>
               </TableCell>
             </TableRow>
           )
@@ -90,7 +90,11 @@ function VotersTableMain({
 
 export default function Page() {
 
-  const params = useParams();
+  const searchParams = useSearchParams();
+
+  const params = {
+    grade: searchParams.get("grade")
+  }
 
   const apiUrl =
     typeof window !== "undefined" ? localStorage.getItem("API_URL") : null
