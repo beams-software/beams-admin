@@ -29,7 +29,17 @@ jobs:
 
       - run: npm run build:electron
 
-      - run: npx electron-builder --win --publish always
+      - run: npx electron-builder --win --publish never
         working-directory: electron
+
+      - name: Upload to GitHub Release
+        uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          # This targets your .exe, latest.yml, and .blockmap inside your dist folder
+          files: |
+            electron/dist/*.exe
+            electron/dist/*.yml
+            electron/dist/*.blockmap
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
