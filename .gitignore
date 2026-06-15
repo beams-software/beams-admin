@@ -35,6 +35,9 @@ pnpm-debug.log*
 *.tsbuildinfo
 next-env.d.ts
 
-electron/out
+dist/
+extracted/
+
 electron/node_modules
+electron/out
 electron/dist-electron
