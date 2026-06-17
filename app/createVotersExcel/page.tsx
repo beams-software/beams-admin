@@ -29,7 +29,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import Image from "next/image"
 
 const navBar = getNavBar(NavBarItemType.ViewVoters)
 
@@ -123,7 +122,7 @@ export default function Page() {
               </p>
             </>
             <p className="my-2 text-sm">Example : </p>
-            <Image
+            <img
               src="/ExcelExamplePicture.png"
               width={647}
               height={296}
