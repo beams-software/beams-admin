@@ -58,7 +58,7 @@ function PositionTable({
   <Table>
       <TableHeader>
         <TableRow>
-          <TableHead className="w-25">Position Name</TableHead>
+          <TableHead className="w-25">Position Name (ID)</TableHead>
           <TableHead>Which groups can see?</TableHead>
           <TableHead>Number of Candidates</TableHead>
           <TableHead className="text-right">Click to view the candidates</TableHead>
@@ -67,7 +67,7 @@ function PositionTable({
       <TableBody>
         {response.result.map((position) => (
           <TableRow key={position.id}>
-            <TableCell className="font-medium">{position.name}</TableCell>
+            <TableCell className="font-medium">{position.name} (ID: {position.id})</TableCell>
             <TableCell>{position.wcs.split(";").map((wci) => {
               const wcName = Object.entries(wcsTemplate).find(([key, value]) => value === parseInt(wci))?.[0]
               return <p key={wci}>{wcName}</p>
