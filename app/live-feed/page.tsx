@@ -32,6 +32,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import ExcelJS from "exceljs"
+import { saveAs } from "file-saver"
+import { Spinner } from "@/components/ui/spinner"
 
 const navBar = getNavBar(NavBarItemType.ViewLiveFeed)
 
@@ -87,7 +90,7 @@ export default function Page() {
     typeof window !== "undefined" ? sessionStorage.getItem("token") : null
 
   const router = useTransitionRouter()
-
+  const [isExporting, setIsExporting] = useState(false)
   const [showCandidates, setShowCandidates] = useState(false)
 
   const {
@@ -163,6 +166,144 @@ export default function Page() {
   useEffect(() => {
     console.log(chartLiveFeedData)
   }, [chartLiveFeedData])
+  function columnWidthToPixels(width: number) {
+    return Math.floor((width + 0.75) * 8)
+  }
+
+  function rowHeightToPixels(height: number) {
+    return Math.floor((height * 96) / 72)
+  }
+  const handleExportExcel = async () => {
+    if (!resultData) return
+    setIsExporting(true)
+    try {
+      const workbook = new ExcelJS.Workbook()
+
+      for (const position of resultData) {
+        const sheet = workbook.addWorksheet(position.name)
+
+        // Title
+        sheet.mergeCells("A1:E1")
+        sheet.getCell("A1").value = position.name
+
+        // Headers
+        sheet.addRow(["Admission ID", "Name", "Grade", "Photo", "Votes"])
+        sheet.columns = [
+          { width: 15 }, // Admission ID
+          { width: 25 }, // Name
+          { width: 10 }, // Grade
+          { width: 15 }, // Photo
+          { width: 10 }, // Votes
+        ]
+        sheet.getCell("A1").alignment = {
+          horizontal: "center",
+          vertical: "middle",
+        }
+
+        sheet.getCell("A1").font = {
+          bold: true,
+          size: 16,
+        }
+        sheet.views = [
+          {
+            state: "frozen",
+            ySplit: 2,
+          },
+        ]
+        let row = 3
+
+        for (const candidate of position.candidates) {
+          sheet.addRow([
+            candidate.admid,
+            candidate.name,
+            candidate.grade,
+            "",
+            candidate.startingVotes + candidate._count.votes,
+          ])
+
+          sheet.getRow(row).height = 80
+
+          try {
+            const response = await fetch(
+              `${apiUrl}/static/candidates/${candidate.photo}`
+            )
+
+            const buffer = await response.arrayBuffer()
+
+            const blob = new Blob([buffer])
+
+            const img = new Image()
+
+            await new Promise<void>((resolve, reject) => {
+              img.onload = () => resolve()
+              img.onerror = reject
+
+              img.src = URL.createObjectURL(blob)
+            })
+
+            const maxSize = 75
+
+            const scale = Math.min(maxSize / img.width, maxSize / img.height)
+
+            const columnWidth = sheet.getColumn(4).width ?? 8.43
+            const rowHeight = sheet.getRow(row).height ?? 15
+
+            const cellWidthPx = columnWidthToPixels(columnWidth)
+            const cellHeightPx = rowHeightToPixels(rowHeight)
+
+            const imageWidth = img.width
+            const imageHeight = img.height
+
+            // const scale = Math.min(
+            //   cellWidthPx / imageWidth,
+            //   cellHeightPx / imageHeight
+            // )
+
+            const width = imageWidth * scale
+            const height = imageHeight * scale
+
+            const xOffsetPx = (cellWidthPx - width) / 2
+            const yOffsetPx = (cellHeightPx - height) / 2
+
+            const contentType = response.headers.get("content-type")
+
+            const extension = contentType === "image/png" ? "png" : "jpeg"
+
+            const imageId = workbook.addImage({
+              buffer: buffer,
+              extension: extension, // see note below
+            })
+
+            sheet.addImage(imageId, {
+              tl: {
+                col: 3 + xOffsetPx / cellWidthPx,
+                row: row - 1 + yOffsetPx / cellHeightPx,
+              },
+              ext: {
+                width,
+                height,
+              },
+            })
+          } catch (err) {
+            console.error(`Failed to load image for ${candidate.name}`, err)
+          }
+          const currentRow = sheet.getRow(row)
+
+          currentRow.alignment = {
+            vertical: "middle",
+            horizontal: "center",
+          }
+          row++
+        }
+      }
+
+      const excelBuffer = await workbook.xlsx.writeBuffer()
+
+      saveAs(new Blob([excelBuffer]), `Election Results.xlsx`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   return (
     <SidebarProvider>
@@ -203,7 +344,13 @@ export default function Page() {
         </div>
         <div className="flex flex-row gap-10 self-center">
           <div className="self-center">
-            <Button variant={"outline"} onClick={() => {refetchChart(); refetchResult()}}>
+            <Button
+              variant={"outline"}
+              onClick={() => {
+                refetchChart()
+                refetchResult()
+              }}
+            >
               Refresh
             </Button>
           </div>
@@ -211,12 +358,23 @@ export default function Page() {
             <Label htmlFor="airplane-mode">Voters</Label>
             <Switch
               id="airplane-mode"
-              onClick={() => {setShowCandidates((p) => !p); refetchChart(); refetchResult()}}
+              onClick={() => {
+                setShowCandidates((p) => !p)
+                refetchChart()
+                refetchResult()
+              }}
             />
             <Label htmlFor="airplane-mode">Candidates</Label>
           </div>
           <div className="self-center">
-            <Button variant={"outline"} onClick={typeof window !== "undefined" ? window.print : () => {}}>Print</Button>
+            <Button
+              variant="outline"
+              onClick={handleExportExcel}
+              disabled={isExporting}
+            >
+              {isExporting && <Spinner />}
+              {isExporting ? "Exporting..." : "Export"}
+            </Button>
           </div>
         </div>
         {!showCandidates ? (
