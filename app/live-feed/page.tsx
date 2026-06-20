@@ -180,7 +180,7 @@ export default function Page() {
       const workbook = new ExcelJS.Workbook()
 
       for (const position of resultData) {
-        const sheet = workbook.addWorksheet(position.name)
+        const sheet = workbook.addWorksheet(`${position.id}`)
 
         // Title
         sheet.mergeCells("A1:E1")
