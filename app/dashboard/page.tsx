@@ -102,7 +102,7 @@ export default function Page() {
               </CardHeader>
               <CardContent>
                 <p>Voted : {dashboardDataQuery.data?.votedVoters}</p>
-                <p>Not Voted (including absentees): {dashboardDataQuery.data?.totalVoters ? dashboardDataQuery.data?.totalVoters : 0 - (dashboardDataQuery.data?.votedVoters ? dashboardDataQuery.data?.votedVoters : 0)}</p>
+                <p>Not Voted (including absentees): {dashboardDataQuery.data ? dashboardDataQuery.data.totalVoters - dashboardDataQuery.data.votedVoters : 0}</p>
               </CardContent>
             </Card>
           </div>
